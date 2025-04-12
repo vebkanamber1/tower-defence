@@ -13,7 +13,55 @@ sc = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 from load import *
 font = pygame.font.SysFont('Aria', 40 )
+lvl ='menu'
+lvl_game = 1
 money = 500000
+score = 0
+
+
+def startMenu():
+    sc.fill('grey')
+    button_group.draw(sc)
+    button_group.update()
+    pygame.display.update()
+
+def changelvl():
+    sc.fill('grey')
+    button2_group.draw(sc)
+    button2_group.update()
+    pygame.display.update()
+
+
+class Button(pygame.sprite.Sprite):
+    def __init__(self, image, pos, next_lvl, text):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = image
+        self.rect = self.image.get_rect()
+        self.rect.topleft = pos
+        self.text = text
+
+        self.next_lvl = next_lvl
+
+    def update(self):
+        global lvl
+
+        text_render = font.render(self.text, True, 'white')
+        sc.blit(text_render, (self.rect.x + 80, self.rect.y + 5))
+
+        click = pygame.mouse.get_pos()
+        if pygame.mouse.get_pressed()[0]:
+            if self.rect.left < click[0] < self.rect.right and self.rect.top < click[1] < self.rect.bottom:
+                lvl = self.next_lvl
+            if lvl == 'choise':
+                button_back = Button(button_image, (540, 270), 'back', 'back')
+                button2_group.add(button_back)
+
+                button_lvl1 = Button(button_image, (540, 100), 'lvl_1', 'lvl 1')
+                button2_group.add(button_lvl1)
+            if lvl == 'game_lvl':
+                restart()
+            if lvl == 'end':
+                exit()
 
 
 class Bush(pygame.sprite.Sprite):
@@ -110,7 +158,7 @@ class Enemy(pygame.sprite.Sprite):
 
 
     def update(self):
-        global money
+        global money, score
         self.draw_stats_enemy()
         self.rect.x += self.speedx
         self.rect.y += self.speedy
@@ -141,6 +189,7 @@ class Enemy(pygame.sprite.Sprite):
             bullet.kill()
         if self.hp <=0:
             money += 20
+            score += 10
             self.kill()
 
 
@@ -228,15 +277,21 @@ class Tower_shots(pygame.sprite.Sprite):
     def update(self):
         self.upgrades()
         self.shot()
+        print(self.enemy)
 
         if self.enemy is None:
             for enemy in enemy_group:
                 if ((self.rect.centerx - enemy.rect.centerx) ** 2 + (
-                        self.rect.centerx - enemy.rect.centery) ** 2) ** 0.5 <200:
+                        self.rect.centerx - enemy.rect.centery) ** 2) ** 0.5 <500:
                     self.enemy = enemy
                     break
         if self.enemy not in enemy_group:
             self.enemy = None
+
+        if len(enemy_group) == 0:
+            lvl_game += 1
+            restart()
+            drawMaps(str(lvl_game) + '.txt')
 
     def upgrades(self):
         global money
@@ -254,7 +309,9 @@ class Tower_shots(pygame.sprite.Sprite):
                 self.lvl = 2
                 self.damage = 50
                 self.image = tower_1_1_image[0]
+                Bullet.speed = 15
                 self.upgrade = False
+
 
 
     def shot(self):
@@ -264,16 +321,16 @@ class Tower_shots(pygame.sprite.Sprite):
             y_1 = self.rect.top
             x_2 = self.enemy.rect.centerx
             y_2 = self.enemy.rect.centery
-            bullet = Bullet(self.current_bullet_image, (x_1, y_1, x_2, y_2), self.damage)
+            bullet = Bullet(self.current_bullet_image, (x_1, y_1, x_2, y_2), self.damage, 5*self.lvl)
             bullet_group.add(bullet)
             self.timer_shot = 0
 
 class Bullet(pygame.sprite.Sprite):
-    def __init__(self,image,pos,damage):
+    def __init__(self,image,pos,damage, speed = 5):
         pygame.sprite.Sprite.__init__(self)
         self.image = image
         self.rect =self.image.get_rect()
-        self.speed = 5
+        self.speed = speed
         self.damage = damage
         self.start_pos = pygame.math.Vector2(pos[0],pos[1])
         self.end_pos = pygame.math.Vector2(pos[2], pos[3])
@@ -281,7 +338,9 @@ class Bullet(pygame.sprite.Sprite):
         self.rect.center = self.start_pos
 
     def update(self):
+
         self.rect.center += self.velocity
+
 
 
 
@@ -310,7 +369,9 @@ def game_lvl():
     sc.blit(panel_image, (0, 720))
     # sc.blit(upgrade_image, (0, 500))
     money_counter = font.render(f'Деньги: {money}', True, 'black')
+    score_counter = font.render(f'Score: {score}', True, 'black')
     sc.blit(money_counter, (40, 40))
+    sc.blit(score_counter, (40,75))
     tower_afk_group.update()
     tower_afk_group.draw(sc)
     tower_shots_group.update()
@@ -325,9 +386,14 @@ def game_lvl():
 
 def restart():
     global spawner,tower_shots_group,grass_group,tower_afk_group, tower_bush_group, bush_group, enemy_group, spawner_group, up_group, edit_dir_group, bottom_group, left_group, right_group
-    global tower_shop_1, bullet_group
+    global tower_shop_1, bullet_group,button_group,button2_group
+
+
+
     grass_group = pygame.sprite.Group()
     tower_bush_group = pygame.sprite.Group()
+    button_group = pygame.sprite.Group()
+    button2_group = pygame.sprite.Group()
     bush_group = pygame.sprite.Group()
     enemy_group = pygame.sprite.Group()
     edit_dir_group = pygame.sprite.Group()
@@ -345,6 +411,15 @@ def restart():
     tower_shots_group = pygame.sprite.Group()
     tower_shop_1 = Tower_afk(tower_1_on, (45,765))
     tower_afk_group.add(tower_shop_1)
+
+    button_start = Button(button_image, (540, 100), 'choise', 'start')
+    button_group.add(button_start)
+
+    button_score = Button(button_image, (540,180),'score', 'score')
+    button_group.add(button_score)
+
+    button_exit = Button(button_image, (540, 270), 'end', 'exit')
+    button_group.add(button_exit)
 
 def drawmaps(namefile):
     global player
@@ -383,7 +458,13 @@ def drawmaps(namefile):
                     edit_dir_group.add(left)
 
 
+
+
+
 restart()
+
+
+
 drawmaps('game lvl')
 
 while True:
@@ -391,5 +472,18 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
-    game_lvl()
+
+    if lvl == 'game':
+        game_lvl()
+    elif lvl == 'menu':
+        startMenu()
+    elif lvl == 'exit':
+        pygame.quit()
+        game_lvl()
+    elif lvl == 'choise':
+        changelvl()
+    elif lvl =='back':
+        startMenu()
+    elif lvl =='lvl_1':
+        game_lvl()
     clock.tick(FPS)

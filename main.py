@@ -123,7 +123,14 @@ class Tower_bush(pygame.sprite.Sprite):
                 tower_shots_group.add(tower_shots)
                 tower_shop_1.buy = False
                 money -= 100
-
+        if tower_shop_2.buy == True and pygame.mouse.get_pressed()[0]:
+            pos = pygame.mouse.get_pos()
+            if self.rect.left < pos[0] < self.rect.right \
+                    and self.rect.top < pos[1] < self.rect.bottom:
+                tower_shots2 = Tower_shots2(tower_2_on, (self.rect.centerx, self.rect.centery - 30))
+                tower_shots2_group.add(tower_shots2)
+                tower_shop_2.buy = False
+                money -= 200
 
 class Grass(pygame.sprite.Sprite):
     def __init__(self, image, pos):
@@ -178,6 +185,7 @@ class Enemy(pygame.sprite.Sprite):
     def __init__(self, image, pos):
         pygame.sprite.Sprite.__init__(self)
         self.image = image
+        self.default_image = image
         self.rect = self.image.get_rect()
         self.rect.centerx = pos[0]
         self.rect.centery = pos[1]
@@ -186,12 +194,15 @@ class Enemy(pygame.sprite.Sprite):
         self.speedy = 0
         self.max_hp = 100
         self.hp = self.max_hp
+
         if lvl =='lvl 2':
             self.max_hp = 120
             self.hp = self.max_hp
+
         if lvl =='lvl 3':
             self.max_hp = 180
             self.hp = self.max_hp
+
 
     def update(self):
         global money, score,lvl
@@ -201,19 +212,19 @@ class Enemy(pygame.sprite.Sprite):
         if self.dir == 'right':
             self.speedx = 2
             self.speedy = 0
-            self.image = pygame.transform.rotate(enemy_image, 0)
+            self.image = pygame.transform.rotate(self.default_image, 0)
         elif self.dir == 'top':
             self.speedx = 0
             self.speedy = -2
-            self.image = pygame.transform.rotate(enemy_image, 90)
+            self.image = pygame.transform.rotate(self.default_image, 90)
         elif self.dir == 'left':
             self.speedx = -2
             self.speedy = 0
-            self.image = pygame.transform.rotate(enemy_image, 180)
+            self.image = pygame.transform.rotate(self.default_image, 180)
         elif self.dir == 'bottom':
             self.speedx = 0
             self.speedy = 2
-            self.image = pygame.transform.rotate(enemy_image, 270)
+            self.image = pygame.transform.rotate(self.default_image, 270)
 
         if pygame.sprite.spritecollide(self, edit_dir_group, False):
             tile = pygame.sprite.spritecollide(self, edit_dir_group, False)[0]
@@ -231,8 +242,11 @@ class Enemy(pygame.sprite.Sprite):
             self.max_hp = 120
 
 
+
         if lvl =='lvl 3':
             self.max_hp= 180
+
+
 
 
 
@@ -272,16 +286,16 @@ class Spawner():
         elif lvl == 'lvl 2':
             self.timer_spawn += 1
             if self.timer_spawn / FPS > 1:
-                enemy = Enemy(enemy_image, (0, 360))
+                enemy = Enemy(enemy2_image, (0, 360))
                 enemy_group.add(enemy)
                 self.timer_spawn = 0
         elif lvl =='lvl 3':
             self.timer_spawn += 1
             if self.timer_spawn / FPS > 1.8:
-                enemy = Enemy(enemy_image, (0, 360))
+                enemy = Enemy(enemy3_image, (0, 360))
                 enemy_group.add(enemy)
                 self.timer_spawn = 0
-                enemy = Enemy(enemy_image, (200, 0))
+                enemy = Enemy(enemy3_image, (200, 0))
                 enemy_group.add(enemy)
                 enemy.dir = 'bottom'
                 self.timer_spawn = 0
@@ -311,6 +325,28 @@ class Tower_afk(pygame.sprite.Sprite):
                 self.buy = True
         if self.buy:
             sc.blit(tower_1_on, pos)
+
+class Tower_afk2(pygame.sprite.Sprite):
+    def __init__(self, image, pos):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = image
+        self.rect = self.image.get_rect()
+        self.rect.centerx = pos[0]
+        self.rect.centery = pos[1]
+        self.buy = False
+        self.timer_click = 0
+
+    def update(self):
+        pos = pygame.mouse.get_pos()
+        if money < 200:
+            self.image = tower_2_of
+        elif pygame.mouse.get_pressed()[0] and money >= 200:
+
+            if self.rect.left < pos[0] < self.rect.right \
+                    and self.rect.top < pos[1] < self.rect.bottom:
+                self.buy = True
+        if self.buy:
+            sc.blit(tower_2_on, pos)
 
 
 class Tower_shots(pygame.sprite.Sprite):
@@ -371,6 +407,64 @@ class Tower_shots(pygame.sprite.Sprite):
             bullet_group.add(bullet)
             self.timer_shot = 0
 
+class Tower_shots2(pygame.sprite.Sprite):
+    def __init__(self, image, pos):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = image
+        self.rect = self.image.get_rect()
+        self.rect.centerx = pos[0]
+        self.rect.centery = pos[1]
+        self.lvl = 1
+        self.damage = 50
+        self.enemy = None
+        self.timer_shot = 0
+        self.upgrade = False
+        self.current_bullet_image = tower_2_bullet
+
+    def update(self):
+        self.upgrades()
+        self.shot()
+
+
+        if self.enemy is None:
+            for enemy in enemy_group:
+                if ((self.rect.centerx - enemy.rect.centerx) ** 2 + (
+                        self.rect.centerx - enemy.rect.centery) ** 2) ** 0.5 < 500:
+                    self.enemy = enemy
+                    break
+        if self.enemy not in enemy_group:
+            self.enemy = None
+
+    def upgrades(self):
+        global money
+        if self.lvl == 1 and money >= 250:
+            self.upgrade = True
+
+        if self.upgrade == True:
+            sc.blit(upgrade_image, (self.rect.right, self.rect.bottom))
+
+        if self.upgrade == True and pygame.mouse.get_pressed()[0]:
+            pos = pygame.mouse.get_pos()
+            if self.rect.right < pos[0] < self.rect.right + 50 \
+                    and self.rect.bottom < pos[1] < self.rect.bottom + 45:
+                money -=250
+                self.lvl = 2
+                self.damage = 75
+                self.image = tower_2_1_image[2]
+                Bullet.speed = 10
+                self.upgrade = False
+
+    def shot(self):
+        self.timer_shot += 1
+        if self.enemy != None and self.timer_shot / FPS > 3:
+            x_1 = self.rect.centerx
+            y_1 = self.rect.top
+            x_2 = self.enemy.rect.centerx
+            y_2 = self.enemy.rect.centery
+            bullet = Bullet(self.current_bullet_image, (x_1, y_1, x_2, y_2), self.damage, 5 * self.lvl)
+            bullet_group.add(bullet)
+            self.timer_shot = 0
+
 
 class Bullet(pygame.sprite.Sprite):
     def __init__(self, image, pos, damage, speed=5):
@@ -416,6 +510,10 @@ def game_lvl1():
     tower_afk_group.draw(sc)
     tower_shots_group.update()
     tower_shots_group.draw(sc)
+    tower_afk2_group.update()
+    tower_afk2_group.draw(sc)
+    tower_shots2_group.update()
+    tower_shots2_group.draw(sc)
     spawner.update()
     enemy_group.update()
     enemy_group.draw(sc)
@@ -452,6 +550,10 @@ def game_lvl2():
     tower_afk_group.draw(sc)
     tower_shots_group.update()
     tower_shots_group.draw(sc)
+    tower_afk2_group.update()
+    tower_afk2_group.draw(sc)
+    tower_shots2_group.update()
+    tower_shots2_group.draw(sc)
     spawner.update()
     enemy_group.update()
     enemy_group.draw(sc)
@@ -486,6 +588,10 @@ def game_lvl3():
     sc.blit(score_counter, (40, 75))
     tower_afk_group.update()
     tower_afk_group.draw(sc)
+    tower_afk2_group.update()
+    tower_afk2_group.draw(sc)
+    tower_shots2_group.update()
+    tower_shots2_group.draw(sc)
     tower_shots_group.update()
     tower_shots_group.draw(sc)
     spawner.update()
@@ -498,7 +604,7 @@ def game_lvl3():
 
 def restart():
     global spawner, tower_shots_group, grass_group, tower_afk_group, tower_bush_group, bush_group, enemy_group, spawner_group, up_group, edit_dir_group, bottom_group, left_group, right_group
-    global tower_shop_1, bullet_group, button_group, button2_group
+    global tower_shop_1, bullet_group, button_group, button2_group,tower_shop_2,tower_afk2_group,tower_shots2_group
 
     grass_group = pygame.sprite.Group()
     tower_bush_group = pygame.sprite.Group()
@@ -516,11 +622,15 @@ def restart():
     bottom_group.add(edit_dir_group)
     up_group.add(edit_dir_group)
     tower_afk_group = pygame.sprite.Group()
+    tower_afk2_group = pygame.sprite.Group()
     spawner = Spawner()
     bullet_group = pygame.sprite.Group()
     tower_shots_group = pygame.sprite.Group()
+    tower_shots2_group = pygame.sprite.Group()
     tower_shop_1 = Tower_afk(tower_1_on, (45, 765))
     tower_afk_group.add(tower_shop_1)
+    tower_shop_2 = Tower_afk2(tower_2_on, (127, 762))
+    tower_afk_group.add(tower_shop_2)
 
     button_start = Button(button_image, (540, 100), 'choise', 'start')
     button_group.add(button_start)

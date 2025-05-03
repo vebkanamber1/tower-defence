@@ -203,6 +203,7 @@ class Enemy(pygame.sprite.Sprite):
         self.max_hp = 100
         self.hp = self.max_hp
 
+
         if lvl =='lvl 2':
             self.max_hp = 120
             self.hp = self.max_hp

@@ -16,8 +16,9 @@ from load import *
 font = pygame.font.SysFont('Aria', 40)
 lvl = 'menu'
 lvl_game = 1
-money = 500
+money = 50000
 score = 0
+lives = 5
 
 
 def startMenu():
@@ -35,11 +36,7 @@ def changelvl():
     pygame.display.update()
 
 
-# def score():
-#     sc.fill('grey')
-#     button_group.draw(sc)
-#     button_group.update()
-#     pygame.display.update()
+
 
 
 class Button(pygame.sprite.Sprite):
@@ -77,18 +74,18 @@ class Button(pygame.sprite.Sprite):
                 button2_group.add(button_lvl3)
 
             if lvl == 'lvl 1':
-                money = 500
+                money = 5000
                 restart()
                 drawmaps('game_lvl1')
 
             if lvl == 'lvl 2':
-                money = 400
+                money = 4000
                 restart()
 
                 drawmaps('game_lvl2')
 
             if lvl == 'lvl 3':
-                money = 500
+                money = 5000
                 restart()
 
                 drawmaps('game_lvl3')
@@ -202,6 +199,7 @@ class Enemy(pygame.sprite.Sprite):
         self.speedy = 0
         self.max_hp = 100
         self.hp = self.max_hp
+        self.fire = False
 
 
         if lvl =='lvl 2':
@@ -216,6 +214,8 @@ class Enemy(pygame.sprite.Sprite):
     def update(self):
         global money, score,lvl
         self.draw_stats_enemy()
+        self.win_enemy()
+        self.firee()
         self.rect.x += self.speedx
         self.rect.y += self.speedy
         if self.dir == 'right':
@@ -241,21 +241,36 @@ class Enemy(pygame.sprite.Sprite):
                 self.dir = tile.dir
         if pygame.sprite.spritecollide(self, bullet_group, False):
             bullet = pygame.sprite.spritecollide(self, bullet_group, False)[0]
-            self.hp -= bullet.damage
+            if not bullet.death:
+                self.hp -= bullet.damage
+                bullet.death = True
+                bullet.anime = True
+
+
 
         if pygame.sprite.spritecollide(self, bullet2_group, False):
             bullet2 = pygame.sprite.spritecollide(self, bullet2_group, False)[0]
-            self.hp -= bullet2.damage
-            bullet2.death = True
+            if not bullet2.death:
+                self.hp -= bullet2.damage
+                bullet2.death = True
+                bullet2.anime = True
+
+
 
         if pygame.sprite.spritecollide(self, bullet3_group, False):
             bullet3 = pygame.sprite.spritecollide(self, bullet3_group, False)[0]
-            self.hp -= bullet3.damage
+            if not bullet3.death:
+                self.hp -= bullet3.damage
+                bullet3.death = True
+                bullet3.anime = True
+
 
         if self.hp <= 0:
             money += 20
             score += 10
             self.kill()
+            print(1)
+
         if lvl =='lvl 2':
             self.max_hp = 120
 
@@ -263,6 +278,30 @@ class Enemy(pygame.sprite.Sprite):
 
         if lvl =='lvl 3':
             self.max_hp= 180
+
+
+    def win_enemy(self):
+        global lives,lvl
+        if self.rect.x > WIDTH:
+            lives -= 1
+            self.kill()
+
+        if lives <= 0:
+            lvl = 'menu'
+
+    def firee(self):
+        if pygame.sprite.spritecollide(self, bullet3_group, False):
+            self.fire =True
+
+        if self.fire == True:
+            self.hp -= 0.02
+
+
+
+
+
+
+
 
 
 
@@ -451,7 +490,7 @@ class Tower_shots(pygame.sprite.Sprite):
             y_1 = self.rect.top
             x_2 = self.enemy.rect.centerx
             y_2 = self.enemy.rect.centery
-            bullet = Bullet(self.current_bullet_image, (x_1, y_1, x_2, y_2), self.damage, 5 * self.lvl)
+            bullet = Bullet(self.current_bullet_image, (x_1, y_1, x_2, y_2), self.damage, 4 + self.lvl)
             bullet_group.add(bullet)
             self.timer_shot = 0
 
@@ -530,7 +569,7 @@ class Tower_shots2(pygame.sprite.Sprite):
             y_1 = self.rect.top
             x_2 = self.enemy.rect.centerx
             y_2 = self.enemy.rect.centery
-            bullet2 = Bullet2(self.current_bullet_image, (x_1, y_1, x_2, y_2), self.damage, 5 * self.lvl)
+            bullet2 = Bullet2(self.current_bullet_image, (x_1, y_1, x_2, y_2), self.damage, 3 + self.lvl)
             bullet2_group.add(bullet2)
             self.timer_shot = 0
 
@@ -560,7 +599,7 @@ class Tower_shots3(pygame.sprite.Sprite):
         self.rect.centerx = pos[0]
         self.rect.centery = pos[1]
         self.lvl = 1
-        self.damage = 50
+        self.damage = 30
         self.enemy = None
         self.timer_shot = 0
         self.upgrade = False
@@ -602,7 +641,7 @@ class Tower_shots3(pygame.sprite.Sprite):
                     and self.rect.bottom < pos[1] < self.rect.bottom + 45:
                 money -=300
                 self.lvl = 2
-                self.damage = 75
+                self.damage = 50
                 self.image = tower_3_1_image[2]
 
                 self.upgrade = False
@@ -615,7 +654,7 @@ class Tower_shots3(pygame.sprite.Sprite):
             y_1 = self.rect.top
             x_2 = self.enemy.rect.centerx
             y_2 = self.enemy.rect.centery
-            bullet3 = Bullet3(self.current_bullet_image, (x_1, y_1, x_2, y_2), self.damage, 5 * self.lvl)
+            bullet3 = Bullet3(self.current_bullet_image, (x_1, y_1, x_2, y_2), self.damage, 4 + self.lvl)
             bullet3_group.add(bullet3)
             self.timer_shot = 0
 
@@ -656,16 +695,14 @@ class Bullet(pygame.sprite.Sprite):
 
 
 
+
     def update(self):
         self.animation()
-        self.rect.center += self.velocity
-        if self.death:
-            self.timer += 1
-            if self.timer / FPS > 0.3:
-                self.kill()
-        if pygame.sprite.spritecollide(self, enemy_group, True):
-            self.anime = True
-            self.speed = 0
+        if not self.death:
+            self.rect.center += self.velocity
+
+
+
 
     def animation(self):
         if self.anime:
@@ -702,14 +739,10 @@ class Bullet2(pygame.sprite.Sprite):
 
     def update(self):
         self.animation()
-        self.rect.center += self.velocity
-        if self.death:
-            self.timer += 1
-            if self.timer / FPS > 0.3:
-                self.kill()
-        if pygame.sprite.spritecollide(self, enemy_group, True):
-            self.anime = True
-            self.speed = 0
+        if not self.death:
+            self.rect.center += self.velocity
+
+
 
     def animation(self):
         if self.anime:
@@ -746,14 +779,12 @@ class Bullet3(pygame.sprite.Sprite):
 
     def update(self):
         self.animation()
-        self.rect.center += self.velocity
-        if self.death:
-            self.timer += 1
-            if self.timer / FPS > 0.3:
-                self.kill()
-        if pygame.sprite.spritecollide(self, enemy_group, True):
-            self.anime = True
-            self.speed = 0
+
+        if not self.death:
+            self.rect.center += self.velocity
+
+
+
 
     def animation(self):
         if self.anime:
@@ -766,6 +797,8 @@ class Bullet3(pygame.sprite.Sprite):
                     self.frame += 1
                 self.timer_anime = 0
         self.image = tower_bullet_3anime[self.frame]
+
+
 
 
 
@@ -792,8 +825,10 @@ def game_lvl1():
     sc.blit(panel_image, (0, 720))
     money_counter = font.render(f'Деньги: {money}', True, 'black')
     score_counter = font.render(f'Score: {score}', True, 'black')
+    lives_counter = font.render(f'жизни: {lives}', True, 'black')
+    sc.blit(lives_counter, (40, 75))
     sc.blit(money_counter, (40, 40))
-    sc.blit(score_counter, (40, 75))
+    sc.blit(score_counter, (40, 110))
     tower_afk_group.update()
     tower_afk_group.draw(sc)
     tower_shots_group.update()
@@ -840,8 +875,10 @@ def game_lvl2():
     sc.blit(panel_image, (0, 720))
     money_counter = font.render(f'Деньги: {money}', True, 'black')
     score_counter = font.render(f'Score: {score}', True, 'black')
+    lives_counter = font.render(f'жизни: {lives}', True, 'black')
+    sc.blit(lives_counter, (40, 75))
     sc.blit(money_counter, (40, 40))
-    sc.blit(score_counter, (40, 75))
+    sc.blit(score_counter, (40, 110))
     tower_afk_group.update()
     tower_afk_group.draw(sc)
     tower_shots_group.update()
@@ -887,9 +924,11 @@ def game_lvl3():
     edit_dir_group.draw(sc)
     sc.blit(panel_image, (0, 720))
     money_counter = font.render(f'Деньги: {money}', True, 'black')
-    score_counter = font.render(f'Score: {score}', True, 'black')
+    score_counter = font.render(f'Счет: {score}', True, 'black')
+    lives_counter = font.render(f'Жизни: {lives}', True, 'black')
+    sc.blit(lives_counter,(40,75))
     sc.blit(money_counter, (40, 40))
-    sc.blit(score_counter, (40, 75))
+    sc.blit(score_counter, (40, 110))
     tower_afk_group.update()
     tower_afk_group.draw(sc)
     tower_afk2_group.update()

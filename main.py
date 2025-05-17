@@ -14,29 +14,29 @@ clock = pygame.time.Clock()
 from load import *
 
 font = pygame.font.SysFont('Aria', 40)
+
 lvl = 'menu'
 lvl_game = 1
-money = 50000
+money = 0
 score = 0
-lives = 5
+lives = 20
 
 
 def startMenu():
-    sc.fill('grey')
+
+    sc.blit(fon1_image,(0,0))
     button_group.draw(sc)
     button_group.update()
     pygame.display.update()
 
 
+
 def changelvl():
     sc.fill('grey')
-
+    sc.blit(fon1_image, (0, 0))
     button2_group.draw(sc)
     button2_group.update()
     pygame.display.update()
-
-
-
 
 
 class Button(pygame.sprite.Sprite):
@@ -60,6 +60,8 @@ class Button(pygame.sprite.Sprite):
         if pygame.mouse.get_pressed()[0] and self.timer_click / FPS > 0.3:
             if self.rect.left < click[0] < self.rect.right and self.rect.top < click[1] < self.rect.bottom:
                 lvl = self.next_lvl
+                restart()
+
             if lvl == 'choise':
                 button_back = Button(button_image, (540, 350), 'menu', 'back')
                 button2_group.add(button_back)
@@ -74,18 +76,18 @@ class Button(pygame.sprite.Sprite):
                 button2_group.add(button_lvl3)
 
             if lvl == 'lvl 1':
-                money = 5000
+                money = 700
                 restart()
                 drawmaps('game_lvl1')
 
             if lvl == 'lvl 2':
-                money = 4000
+                money = 600
                 restart()
 
                 drawmaps('game_lvl2')
 
             if lvl == 'lvl 3':
-                money = 5000
+                money = 500
                 restart()
 
                 drawmaps('game_lvl3')
@@ -135,7 +137,8 @@ class Tower_bush(pygame.sprite.Sprite):
                 tower_shots3 = Tower_shots3(tower_3_on, (self.rect.centerx, self.rect.centery - 30))
                 tower_shots3_group.add(tower_shots3)
                 tower_shop_3.buy = False
-                money -= 200
+                money -= 250
+
 
 class Grass(pygame.sprite.Sprite):
     def __init__(self, image, pos):
@@ -201,18 +204,16 @@ class Enemy(pygame.sprite.Sprite):
         self.hp = self.max_hp
         self.fire = False
 
-
-        if lvl =='lvl 2':
+        if lvl == 'lvl 2':
             self.max_hp = 120
             self.hp = self.max_hp
 
-        if lvl =='lvl 3':
+        if lvl == 'lvl 3':
             self.max_hp = 180
             self.hp = self.max_hp
 
-
     def update(self):
-        global money, score,lvl
+        global money, score, lvl
         self.draw_stats_enemy()
         self.win_enemy()
         self.firee()
@@ -246,16 +247,12 @@ class Enemy(pygame.sprite.Sprite):
                 bullet.death = True
                 bullet.anime = True
 
-
-
         if pygame.sprite.spritecollide(self, bullet2_group, False):
             bullet2 = pygame.sprite.spritecollide(self, bullet2_group, False)[0]
             if not bullet2.death:
                 self.hp -= bullet2.damage
                 bullet2.death = True
                 bullet2.anime = True
-
-
 
         if pygame.sprite.spritecollide(self, bullet3_group, False):
             bullet3 = pygame.sprite.spritecollide(self, bullet3_group, False)[0]
@@ -264,49 +261,34 @@ class Enemy(pygame.sprite.Sprite):
                 bullet3.death = True
                 bullet3.anime = True
 
-
         if self.hp <= 0:
             money += 20
             score += 10
             self.kill()
-            print(1)
 
-        if lvl =='lvl 2':
+        if lvl == 'lvl 2':
             self.max_hp = 120
 
-
-
-        if lvl =='lvl 3':
-            self.max_hp= 180
-
+        if lvl == 'lvl 3':
+            self.max_hp = 180
 
     def win_enemy(self):
-        global lives,lvl
+        global lives, lvl, enemy_count
         if self.rect.x > WIDTH:
             lives -= 1
             self.kill()
 
         if lives <= 0:
             lvl = 'menu'
+            enemy_count = 0
+            lives = 20
 
     def firee(self):
         if pygame.sprite.spritecollide(self, bullet3_group, False):
-            self.fire =True
+            self.fire = True
 
         if self.fire == True:
             self.hp -= 0.02
-
-
-
-
-
-
-
-
-
-
-
-
 
     def draw_stats_enemy(self):
         if self.hp < self.max_hp:
@@ -328,37 +310,50 @@ class Edit_dir_tile(pygame.sprite.Sprite):
 class Spawner():
     def __init__(self):
         self.timer_spawn = 1
+        self.enemy_count = 0
 
     def update(self):
         self.spawn()
 
     def spawn(self):
         global lvl
-        if lvl =='lvl 1':
+        if self.enemy_count > 100 and  lvl == 'lvl 1' :
+            lvl = 'lvl 2'
+            restart()
+            drawmaps('game_lvl2')
+
+        if self.enemy_count > 200 and lvl == 'lvl 2':
+            lvl ='lvl 3'
+            restart()
+            drawmaps('game_lvl3')
+
+
+        if lvl == 'lvl 1':
             self.timer_spawn += 1
             if self.timer_spawn / FPS > 1:
                 enemy = Enemy(enemy_image, (0, 680))
                 enemy_group.add(enemy)
+                self.enemy_count += 1
                 self.timer_spawn = 0
         elif lvl == 'lvl 2':
             self.timer_spawn += 1
             if self.timer_spawn / FPS > 1:
                 enemy = Enemy(enemy2_image, (0, 360))
                 enemy_group.add(enemy)
+                self.enemy_count += 1
                 self.timer_spawn = 0
-        elif lvl =='lvl 3':
+        elif lvl == 'lvl 3':
             self.timer_spawn += 1
             if self.timer_spawn / FPS > 1.8:
                 enemy = Enemy(enemy3_image, (0, 360))
                 enemy_group.add(enemy)
                 self.timer_spawn = 0
+                self.enemy_count += 1
                 enemy = Enemy(enemy3_image, (200, 0))
                 enemy_group.add(enemy)
+                self.enemy_count += 1
                 enemy.dir = 'bottom'
                 self.timer_spawn = 0
-
-
-
 
 
 class Tower_afk(pygame.sprite.Sprite):
@@ -383,6 +378,7 @@ class Tower_afk(pygame.sprite.Sprite):
         if self.buy:
             sc.blit(tower_1_on, pos)
 
+
 class Tower_afk2(pygame.sprite.Sprite):
     def __init__(self, image, pos):
         pygame.sprite.Sprite.__init__(self)
@@ -405,6 +401,7 @@ class Tower_afk2(pygame.sprite.Sprite):
         if self.buy:
             sc.blit(tower_2_on, pos)
 
+
 class Tower_afk3(pygame.sprite.Sprite):
     def __init__(self, image, pos):
         pygame.sprite.Sprite.__init__(self)
@@ -417,16 +414,15 @@ class Tower_afk3(pygame.sprite.Sprite):
 
     def update(self):
         pos = pygame.mouse.get_pos()
-        if money < 200:
+        if money < 250:
             self.image = tower_3_of
-        elif pygame.mouse.get_pressed()[0] and money >= 200:
+        elif pygame.mouse.get_pressed()[0] and money >= 250:
 
             if self.rect.left < pos[0] < self.rect.right \
                     and self.rect.top < pos[1] < self.rect.bottom:
                 self.buy = True
         if self.buy:
             sc.blit(tower_3_on, pos)
-
 
 
 class Tower_shots(pygame.sprite.Sprite):
@@ -452,7 +448,6 @@ class Tower_shots(pygame.sprite.Sprite):
         self.shot()
         self.animation()
 
-
         if self.enemy is None:
             for enemy in enemy_group:
                 if ((self.rect.centerx - enemy.rect.centerx) ** 2 + (
@@ -474,14 +469,13 @@ class Tower_shots(pygame.sprite.Sprite):
             pos = pygame.mouse.get_pos()
             if self.rect.right < pos[0] < self.rect.right + 50 \
                     and self.rect.bottom < pos[1] < self.rect.bottom + 45:
-                money -=200
+                money -= 200
                 self.lvl = 2
                 self.damage = 50
                 self.image = tower_1_1_image[0]
                 Bullet.speed = 15
                 self.upgrade = False
                 self.current_image_list = tower_1_1_image
-
 
     def shot(self):
         self.timer_shot += 1
@@ -504,6 +498,7 @@ class Tower_shots(pygame.sprite.Sprite):
                     self.frame += 1
                 self.timer_anime = 0
         self.image = self.current_image_list[self.frame]
+
 
 class Tower_shots2(pygame.sprite.Sprite):
     def __init__(self, image, pos):
@@ -528,11 +523,6 @@ class Tower_shots2(pygame.sprite.Sprite):
         self.shot()
         self.animation()
 
-
-
-
-
-
         if self.enemy is None:
             for enemy in enemy_group:
                 if ((self.rect.centerx - enemy.rect.centerx) ** 2 + (
@@ -554,7 +544,7 @@ class Tower_shots2(pygame.sprite.Sprite):
             pos = pygame.mouse.get_pos()
             if self.rect.right < pos[0] < self.rect.right + 50 \
                     and self.rect.bottom < pos[1] < self.rect.bottom + 45:
-                money -=250
+                money -= 250
                 self.lvl = 2
                 self.damage = 75
                 self.image = tower_2_1_image[2]
@@ -573,10 +563,6 @@ class Tower_shots2(pygame.sprite.Sprite):
             bullet2_group.add(bullet2)
             self.timer_shot = 0
 
-
-
-
-
     def animation(self):
         if self.anime:
             self.timer_anime += 1
@@ -587,7 +573,6 @@ class Tower_shots2(pygame.sprite.Sprite):
                     self.frame += 1
                 self.timer_anime = 0
         self.image = self.current_image_list[self.frame]
-
 
 
 class Tower_shots3(pygame.sprite.Sprite):
@@ -613,11 +598,6 @@ class Tower_shots3(pygame.sprite.Sprite):
         self.shot()
         self.animation()
 
-
-
-
-
-
         if self.enemy is None:
             for enemy in enemy_group:
                 if ((self.rect.centerx - enemy.rect.centerx) ** 2 + (
@@ -639,7 +619,7 @@ class Tower_shots3(pygame.sprite.Sprite):
             pos = pygame.mouse.get_pos()
             if self.rect.right < pos[0] < self.rect.right + 50 \
                     and self.rect.bottom < pos[1] < self.rect.bottom + 45:
-                money -=300
+                money -= 300
                 self.lvl = 2
                 self.damage = 50
                 self.image = tower_3_1_image[2]
@@ -657,10 +637,6 @@ class Tower_shots3(pygame.sprite.Sprite):
             bullet3 = Bullet3(self.current_bullet_image, (x_1, y_1, x_2, y_2), self.damage, 4 + self.lvl)
             bullet3_group.add(bullet3)
             self.timer_shot = 0
-
-
-
-
 
     def animation(self):
         if self.anime:
@@ -691,18 +667,10 @@ class Bullet(pygame.sprite.Sprite):
         self.timer_anime = 0
         self.anime = False
 
-
-
-
-
-
     def update(self):
         self.animation()
         if not self.death:
             self.rect.center += self.velocity
-
-
-
 
     def animation(self):
         if self.anime:
@@ -715,6 +683,7 @@ class Bullet(pygame.sprite.Sprite):
                     self.frame += 1
                 self.timer_anime = 0
         self.image = tower_bullet_anime[self.frame]
+
 
 class Bullet2(pygame.sprite.Sprite):
     def __init__(self, image, pos, damage, speed=5):
@@ -733,16 +702,10 @@ class Bullet2(pygame.sprite.Sprite):
         self.timer_anime = 0
         self.anime = False
 
-
-
-
-
     def update(self):
         self.animation()
         if not self.death:
             self.rect.center += self.velocity
-
-
 
     def animation(self):
         if self.anime:
@@ -755,6 +718,7 @@ class Bullet2(pygame.sprite.Sprite):
                     self.frame += 1
                 self.timer_anime = 0
         self.image = tower_bullet_2anime[self.frame]
+
 
 class Bullet3(pygame.sprite.Sprite):
     def __init__(self, image, pos, damage, speed=5):
@@ -773,18 +737,11 @@ class Bullet3(pygame.sprite.Sprite):
         self.timer_anime = 0
         self.anime = False
 
-
-
-
-
     def update(self):
         self.animation()
 
         if not self.death:
             self.rect.center += self.velocity
-
-
-
 
     def animation(self):
         if self.anime:
@@ -797,10 +754,6 @@ class Bullet3(pygame.sprite.Sprite):
                     self.frame += 1
                 self.timer_anime = 0
         self.image = tower_bullet_3anime[self.frame]
-
-
-
-
 
 
 def game_lvl1():
@@ -826,6 +779,9 @@ def game_lvl1():
     money_counter = font.render(f'Деньги: {money}', True, 'black')
     score_counter = font.render(f'Score: {score}', True, 'black')
     lives_counter = font.render(f'жизни: {lives}', True, 'black')
+    tower_1_price = font.render(f'{100}', True, 'green')
+    tower_2_price = font.render(f'{200}', True, 'orange')
+    tower_3_price = font.render(f'{250}', True, 'red')
     sc.blit(lives_counter, (40, 75))
     sc.blit(money_counter, (40, 40))
     sc.blit(score_counter, (40, 110))
@@ -843,6 +799,9 @@ def game_lvl1():
     tower_shots3_group.draw(sc)
     bullet3_group.update()
     bullet3_group.draw(sc)
+    sc.blit(tower_1_price, (22, 750))
+    sc.blit(tower_2_price, (105, 750))
+    sc.blit(tower_3_price, (180, 750))
     spawner.update()
     enemy_group.update()
     enemy_group.draw(sc)
@@ -926,7 +885,7 @@ def game_lvl3():
     money_counter = font.render(f'Деньги: {money}', True, 'black')
     score_counter = font.render(f'Счет: {score}', True, 'black')
     lives_counter = font.render(f'Жизни: {lives}', True, 'black')
-    sc.blit(lives_counter,(40,75))
+    sc.blit(lives_counter, (40, 75))
     sc.blit(money_counter, (40, 40))
     sc.blit(score_counter, (40, 110))
     tower_afk_group.update()
@@ -955,7 +914,7 @@ def game_lvl3():
 
 def restart():
     global spawner, tower_shots_group, grass_group, tower_afk_group, tower_bush_group, bush_group, enemy_group, spawner_group, up_group, edit_dir_group, bottom_group, left_group, right_group
-    global tower_shop_1, bullet_group, button_group, button2_group,tower_shop_2,tower_afk2_group,tower_shots2_group,bullet2_group,tower_shop_3,bullet3_group,tower_afk3_group,tower_shots3_group
+    global tower_shop_1, bullet_group, button_group, button2_group, tower_shop_2, tower_afk2_group, tower_shots2_group, bullet2_group, tower_shop_3, bullet3_group, tower_afk3_group, tower_shots3_group
     # global
 
     grass_group = pygame.sprite.Group()
@@ -978,7 +937,6 @@ def restart():
     spawner = Spawner()
     bullet_group = pygame.sprite.Group()
     bullet2_group = pygame.sprite.Group()
-
 
     bullet3_group = pygame.sprite.Group()
     tower_afk3_group = pygame.sprite.Group()
@@ -1042,6 +1000,7 @@ def drawmaps(namefile):
 restart()
 
 while True:
+    print(lvl)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
